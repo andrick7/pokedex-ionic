@@ -1,0 +1,35 @@
+<ion-header>
+  <ion-toolbar color="danger">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Detalle</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (pokemon(); as p) {
+    <div class="ion-text-center">
+      <img [src]="imagen(p.id)" [alt]="p.name" style="width: 220px; max-width: 70%" />
+      <h1>{{ p.name }}</h1>
+    </div>
+
+    <h3>Tipos</h3>
+    @for (t of p.types; track t.type.name) {
+      <ion-chip>{{ t.type.name }}</ion-chip>
+    }
+
+    <h3>Habilidades</h3>
+    @for (h of p.abilities; track h.ability.name) {
+      <ion-chip color="danger">{{ h.ability.name }}</ion-chip>
+    }
+
+    <h3>Medidas</h3>
+    <p>Altura: {{ p.height / 10 }} m</p>
+    <p>Peso: {{ p.weight / 10 }} kg</p>
+  } @else {
+    <div class="ion-text-center">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+</ion-content>
