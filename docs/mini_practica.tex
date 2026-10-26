@@ -1,0 +1,486 @@
+% Guia de practica: Pokedex con Ionic 9 + Angular 22. Compilar con pdfLaTeX.
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{microtype}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{url}
+\urlstyle{tt}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.25}
+\setlist{itemsep=0.2em,topsep=0.3em}
+\definecolor{azul}{HTML}{1F3F8F}
+\definecolor{rojo}{HTML}{C8102E}
+\definecolor{azulclaro}{HTML}{3880FF}
+\definecolor{codebg}{HTML}{F5F7FA}
+\definecolor{codeframe}{HTML}{C8D0DC}
+\pagestyle{fancy}\fancyhf{}
+\fancyfoot[C]{\small P\'agina \thepage}
+\fancyhead[L]{\small Pok\'edex con Ionic}
+\renewcommand{\headrulewidth}{0.3pt}
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{azul}}{\thesubsection}{0.6em}{}
+\lstdefinestyle{codigo}{
+  basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{codebg},frame=single,
+  rulecolor=\color{codeframe},breaklines=true,columns=fullflexible,keepspaces=true,
+  showstringspaces=false,upquote=true,xleftmargin=0.3em,xrightmargin=0.3em,aboveskip=0.4em,belowskip=0.6em,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1 {¿}{{?`}}1 {¡}{{!`}}1}
+\lstset{style=codigo}
+\newcommand{\cmd}[1]{\texttt{#1}}
+\newcommand{\archivo}[1]{\par\smallskip\noindent\textbf{Archivo:} \texttt{\detokenize{#1}}\par\nopagebreak}
+\newtcolorbox{nota}[1][Nota]{breakable,colback=azulclaro!6,colframe=azulclaro!70!black,fonttitle=\bfseries,title=#1,boxrule=0.6pt,arc=2pt}
+\newtcolorbox{alerta}[1][Importante]{breakable,colback=orange!8,colframe=orange!80!black,fonttitle=\bfseries,title=#1,boxrule=0.6pt,arc=2pt}
+\newtcolorbox{resultado}[1][Resultado esperado]{breakable,colback=green!5,colframe=green!45!black,fonttitle=\bfseries,title=#1,boxrule=0.6pt,arc=2pt}
+
+\title{{\Huge\bfseries\color{rojo} Pok\'edex con Ionic}\\[0.5em]{\Large Pr\'actica guiada en 2 etapas}}
+\author{Andrick Millan y Emiliano Cisneros}
+\date{\today}
+\begin{document}\sloppy
+\maketitle\thispagestyle{fancy}
+
+\section{Qu\'e vamos a construir}
+Una app de Pok\'emon con dos pantallas: una \textbf{lista} con im\'agenes y, al tocar una tarjeta,
+una pantalla de \textbf{detalle} con tipos, habilidades, altura y peso que se piden a internet (PokeAPI).
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}>{\bfseries}p{1.6cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{4.4cm} r@{}}
+\toprule
+Etapa & Qu\'e se logra & Concepto nuevo & Min \\
+\midrule
+0 & Crear el proyecto y verlo en el navegador & \cmd{ionic start}, \cmd{ionic serve} & 10 \\
+1 & Lista de 3 Pok\'emon con imagen & Componentes de Ionic, \cmd{@for} & 20 \\
+2 & Pantalla de detalle con datos de internet & Rutas, \cmd{HttpClient}, signals & 30 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{nota}[C\'omo usar esta gu\'ia]
+En cada etapa: abre o crea los archivos indicados, \textbf{reemplaza todo su contenido} con el c\'odigo de la gu\'ia,
+guarda con \texttt{Ctrl+S} y mira el navegador (se actualiza solo).
+\end{nota}
+
+\begin{alerta}[Reglas para evitar errores]
+\begin{itemize}
+\item Crea los archivos \textbf{a mano} (clic derecho $\rightarrow$ New File). No uses \cmd{ionic generate}.
+\item Los nombres de archivo deben ser \textbf{exactamente} los de la gu\'ia (min\'usculas, con punto).
+\item Crea el proyecto en una ruta corta, sin acentos ni espacios: \texttt{C:\textbackslash Proyectos} (Mac: \texttt{\~{}/Proyectos}).
+\item Comentarios: en \texttt{.ts} se escribe \texttt{// texto}; en \texttt{.html} se escribe \texttt{<!-{}- texto -{}->}. Si pones \texttt{//} en un HTML, el texto aparece en la pantalla.
+\item Las comillas especiales del c\'odigo (\texttt{`}) se llaman \emph{comillas invertidas}. Windows (teclado espa\~nol): tecla \texttt{`} y luego espacio, o \texttt{Alt Gr + \}}. Mac: \texttt{Option + `} y espacio.
+\end{itemize}
+\end{alerta}
+
+\section{Etapa 0: preparar el proyecto (10 min)}
+\subsection*{Requisitos previos}
+\begin{itemize}
+\item Node.js \textbf{22.22.3 o superior} (recomendado la LTS m\'as reciente). Comprobar: \cmd{node -v}
+\item Ionic CLI: \cmd{npm install -g @ionic/cli}. Comprobar: \cmd{ionic -{}-version}
+\item Visual Studio Code.
+\end{itemize}
+
+\subsection*{Pasos}
+\begin{enumerate}
+\item En VS Code abre una terminal (\texttt{Ctrl+`}) y entra a tu carpeta de trabajo:
+\begin{lstlisting}
+cd C:\Proyectos          # Mac: cd ~/Proyectos
+\end{lstlisting}
+\item Crea el proyecto (si pregunta por una cuenta de Ionic, responde \textbf{n}):
+\begin{lstlisting}
+ionic start pokedex blank --type=angular-standalone --capacitor
+cd pokedex
+\end{lstlisting}
+\item Abre la carpeta del proyecto en VS Code: \texttt{File $\rightarrow$ Open Folder $\rightarrow$ pokedex}.
+\item Arranca la app:
+\begin{lstlisting}
+ionic serve
+\end{lstlisting}
+\end{enumerate}
+\begin{resultado}
+Se abre \url{http://localhost:8100} con la p\'agina de bienvenida. \textbf{No cierres la terminal}: mientras
+\cmd{ionic serve} corra, cada cambio guardado se ve solo. Para vista de celular: \texttt{F12} y el icono de tel\'efono.
+\end{resultado}
+\begin{nota}[Verifica esto]
+Abre \texttt{src/app/home/home.page.ts}. Los componentes de Ionic deben importarse de \texttt{'@ionic/angular'}.
+Si dice \texttt{'@ionic/angular/standalone'}, c\'ambialo por \texttt{'@ionic/angular'} en todos los c\'odigos de esta gu\'ia.
+\end{nota}
+
+\section{Etapa 1: lista de Pok\'emon (20 min)}
+\textbf{Objetivo:} mostrar 3 Pok\'emon escritos a mano para entender c\'omo se arma una pantalla con Ionic.
+
+\subsection*{Pasos}
+Reemplaza el contenido de los tres archivos de \texttt{src/app/home/}.
+\archivo{src/app/home/home.page.ts}
+\begin{lstlisting}
+import { Component } from '@angular/core';
+import {
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+} from '@ionic/angular';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: 'home.page.html',
+  styleUrls: ['home.page.scss'],
+  imports: [
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonContent,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardSubtitle,
+  ],
+})
+export class HomePage {
+  // Lista escrita a mano (todavia no usamos internet)
+  pokemons = [
+    { id: 1, nombre: 'bulbasaur' },
+    { id: 4, nombre: 'charmander' },
+    { id: 25, nombre: 'pikachu' },
+  ];
+
+  // Devuelve la URL de la imagen de un Pokemon segun su numero
+  imagen(id: number): string {
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+  }
+}
+\end{lstlisting}
+\archivo{src/app/home/home.page.html}
+\begin{lstlisting}
+<ion-header>
+  <ion-toolbar color="danger">
+    <ion-title>Pokédex</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @for (p of pokemons; track p.id) {
+    <ion-card>
+      <img [src]="imagen(p.id)" [alt]="p.nombre" />
+      <ion-card-header>
+        <ion-card-subtitle>#{{ p.id }}</ion-card-subtitle>
+        <ion-card-title>{{ p.nombre }}</ion-card-title>
+      </ion-card-header>
+    </ion-card>
+  }
+</ion-content>
+\end{lstlisting}
+\archivo{src/app/home/home.page.scss}
+\begin{lstlisting}
+/* Las imagenes ocupan todo el ancho de la tarjeta */
+img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+\end{lstlisting}
+
+\begin{resultado}
+Tres tarjetas con la imagen de Bulbasaur, Charmander y Pikachu y una barra roja con el t\'itulo \emph{Pok\'edex}.
+\end{resultado}
+\subsection*{Qu\'e aprendimos}
+\begin{itemize}
+\item Una \textbf{p\'agina} son tres archivos: \texttt{.ts} (l\'ogica), \texttt{.html} (lo que se ve) y \texttt{.scss} (estilo).
+\item \texttt{ion-header}, \texttt{ion-toolbar}, \texttt{ion-content}, \texttt{ion-card}: componentes ya hechos de Ionic. Cada uno que se usa en el HTML debe estar en la lista \texttt{imports} del componente \textbf{y} en el \texttt{import} de arriba.
+\item \cmd{@for} repite un bloque por cada elemento de la lista; \cmd{track} indica qu\'e dato identifica a cada elemento.
+\item \cmd{[src]="..."} conecta un valor del c\'odigo con el HTML; \cmd{\{\{ ... \}\}} imprime un valor.
+\item Cada n\'umero es el de la Pok\'edex real: 1 Bulbasaur, 4 Charmander, 25 Pikachu.
+\end{itemize}
+\begin{alerta}[Errores comunes]
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{5cm} >{\raggedright\arraybackslash}X@{}}
+Un componente sale en gris en la lista de imports & Est\'a importado arriba pero falta en \texttt{imports: [...]}. \\
+\texttt{'ion-card' is not a known element} & Agrega \texttt{IonCard} a \texttt{imports: [...]}. \\
+Im\'agenes rotas & La URL debe ir entre \textbf{comillas invertidas}, sin espacios, y terminar en \texttt{\$\{id\}.png}. \\
+Pantalla en blanco & Revisa la terminal y la consola (\texttt{F12}); suele ser una llave sin cerrar. \\
+\end{tabularx}
+\end{center}
+\end{alerta}
+
+\section{Etapa 2: pantalla de detalle (30 min)}
+\textbf{Objetivo:} al tocar una tarjeta, abrir otra pantalla con los datos de ese Pok\'emon, pedidos a la API.
+
+\subsection*{Idea}
+Una \textbf{API} es un servicio al que le pedimos datos por internet. Abre \url{https://pokeapi.co/api/v2/pokemon/25}
+en el navegador: es un JSON con todo lo de Pikachu (\texttt{types}, \texttt{abilities}, \texttt{height}, \texttt{weight}).
+Nuestra pantalla de detalle pide ese JSON y muestra las partes que nos interesan.
+
+\subsection*{Pasos}
+\begin{enumerate}
+\item \textbf{Permitir peticiones a internet.} En \texttt{src/main.ts} agrega el \texttt{import} y la l\'inea \cmd{provideHttpClient()} dentro de \texttt{providers}. Puedes reemplazar todo el archivo:
+\end{enumerate}
+\archivo{src/main.ts}
+\begin{lstlisting}
+import { bootstrapApplication } from '@angular/platform-browser';
+import { RouteReuseStrategy, provideRouter, withComponentInputBinding, withPreloading, PreloadAllModules } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
+
+import { routes } from './app/app.routes';
+import { AppComponent } from './app/app.component';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    provideIonicAngular(),
+    provideRouter(routes, withPreloading(PreloadAllModules), withComponentInputBinding()),
+    provideHttpClient(), // <- permite consultar la PokeAPI
+  ],
+});
+\end{lstlisting}
+
+\begin{enumerate}\setcounter{enumi}{1}
+\item \textbf{Agregar la ruta} de la pantalla nueva (\texttt{detalle/:id}; los dos puntos indican que el n\'umero cambia). Reemplaza \texttt{src/app/app.routes.ts}:
+\end{enumerate}
+\archivo{src/app/app.routes.ts}
+\begin{lstlisting}
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: 'home',
+    loadComponent: () => import('./home/home.page').then((m) => m.HomePage),
+  },
+  {
+    path: 'detalle/:id',
+    loadComponent: () => import('./detalle/detalle.page').then((m) => m.DetallePage),
+  },
+  {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full',
+  },
+];
+\end{lstlisting}
+
+\begin{enumerate}\setcounter{enumi}{2}
+\item \textbf{Hacer que la tarjeta sea un enlace.} En \texttt{home.page.ts} se agrega \texttt{RouterLink} (en el \texttt{import} de \texttt{@angular/router} \textbf{y} dentro de \texttt{imports: [...]}; no va en el bloque de Ionic). En \texttt{home.page.html} la tarjeta lleva \cmd{[routerLink]}. Reemplaza ambos archivos:
+\end{enumerate}
+\archivo{src/app/home/home.page.ts}
+\begin{lstlisting}
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import {
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+} from '@ionic/angular';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: 'home.page.html',
+  styleUrls: ['home.page.scss'],
+  imports: [
+    RouterLink,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonContent,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardSubtitle,
+  ],
+})
+export class HomePage {
+  pokemons = [
+    { id: 1, nombre: 'bulbasaur' },
+    { id: 4, nombre: 'charmander' },
+    { id: 25, nombre: 'pikachu' },
+  ];
+
+  imagen(id: number): string {
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+  }
+}
+\end{lstlisting}
+\archivo{src/app/home/home.page.html}
+\begin{lstlisting}
+<ion-header>
+  <ion-toolbar color="danger">
+    <ion-title>Pokédex</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @for (p of pokemons; track p.id) {
+    <ion-card [routerLink]="['/detalle', p.id]">
+      <img [src]="imagen(p.id)" [alt]="p.nombre" />
+      <ion-card-header>
+        <ion-card-subtitle>#{{ p.id }}</ion-card-subtitle>
+        <ion-card-title>{{ p.nombre }}</ion-card-title>
+      </ion-card-header>
+    </ion-card>
+  }
+</ion-content>
+\end{lstlisting}
+
+\begin{enumerate}\setcounter{enumi}{3}
+\item \textbf{Crear la pantalla de detalle.} Crea la carpeta \texttt{src/app/detalle/} (clic derecho en \texttt{app} $\rightarrow$ New Folder) y dentro dos archivos nuevos:
+\end{enumerate}
+\archivo{src/app/detalle/detalle.page.ts}
+\begin{lstlisting}
+import { Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import {
+  IonHeader,
+  IonToolbar,
+  IonButtons,
+  IonBackButton,
+  IonTitle,
+  IonContent,
+  IonChip,
+  IonSpinner,
+} from '@ionic/angular';
+
+@Component({
+  selector: 'app-detalle',
+  templateUrl: 'detalle.page.html',
+  imports: [
+    IonHeader,
+    IonToolbar,
+    IonButtons,
+    IonBackButton,
+    IonTitle,
+    IonContent,
+    IonChip,
+    IonSpinner,
+  ],
+})
+export class DetallePage {
+  private ruta = inject(ActivatedRoute);
+  private http = inject(HttpClient);
+
+  // Aquí guardamos los datos que llegan de internet (al inicio no hay nada)
+  pokemon = signal<any>(null);
+
+  constructor() {
+    // Leemos el número que viene en la dirección: /detalle/25
+    const id = this.ruta.snapshot.paramMap.get('id');
+
+    // Pedimos los datos de ese Pokémon a la PokéAPI
+    this.http
+      .get<any>(`https://pokeapi.co/api/v2/pokemon/${id}`)
+      .subscribe((datos) => this.pokemon.set(datos));
+  }
+
+  imagen(id: number): string {
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+  }
+}
+\end{lstlisting}
+\archivo{src/app/detalle/detalle.page.html}
+\begin{lstlisting}
+<ion-header>
+  <ion-toolbar color="danger">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Detalle</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (pokemon(); as p) {
+    <div class="ion-text-center">
+      <img [src]="imagen(p.id)" [alt]="p.name" style="width: 220px; max-width: 70%" />
+      <h1>{{ p.name }}</h1>
+    </div>
+
+    <h3>Tipos</h3>
+    @for (t of p.types; track t.type.name) {
+      <ion-chip>{{ t.type.name }}</ion-chip>
+    }
+
+    <h3>Habilidades</h3>
+    @for (h of p.abilities; track h.ability.name) {
+      <ion-chip color="danger">{{ h.ability.name }}</ion-chip>
+    }
+
+    <h3>Medidas</h3>
+    <p>Altura: {{ p.height / 10 }} m</p>
+    <p>Peso: {{ p.weight / 10 }} kg</p>
+  } @else {
+    <div class="ion-text-center">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+</ion-content>
+\end{lstlisting}
+
+\begin{enumerate}\setcounter{enumi}{4}
+\item Guarda todo (\texttt{File $\rightarrow$ Save All}). Si la terminal muestra un error viejo, deten el servidor con \texttt{Ctrl+C} y ejecuta de nuevo \cmd{ionic serve}.
+\end{enumerate}
+
+\begin{resultado}
+Al tocar la tarjeta de Pikachu, la URL cambia a \texttt{/detalle/25} y se ve el Pok\'emon grande con sus tipos (\emph{electric}),
+sus habilidades (\emph{static}, \emph{lightning-rod}), altura 0.4~m y peso 6~kg. La flecha de regreso vuelve a la lista.
+\end{resultado}
+\subsection*{Qu\'e aprendimos}
+\begin{itemize}
+\item \textbf{Ruta con par\'ametro:} \texttt{detalle/:id}; el n\'umero se lee con \cmd{ActivatedRoute}.
+\item \cmd{routerLink}: navegar sin recargar la p\'agina.
+\item \cmd{HttpClient}: pedir datos a una API.
+\item \textbf{signal:} variable ``reactiva''. Se lee con par\'entesis, \cmd{pokemon()}, y se cambia con \cmd{.set(...)}; cuando cambia, la pantalla se actualiza sola.
+\item \cmd{@if / @else}: mostrar cosas seg\'un una condici\'on (aqu\'i, el \emph{spinner} mientras llegan los datos).
+\end{itemize}
+\begin{alerta}[Errores comunes]
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{5.3cm} >{\raggedright\arraybackslash}X@{}}
+\texttt{Could not resolve ./detalle/detalle.page} & El archivo \texttt{detalle.page.ts} no existe, est\'a vac\'io o con otro nombre. Si ya est\'a bien, reinicia \cmd{ionic serve}. \\
+\texttt{Can't bind to 'routerLink'} & Falta \texttt{RouterLink} en \texttt{imports: [...]} de \texttt{home.page.ts}. \\
+\texttt{No provider for HttpClient} & Falta \cmd{provideHttpClient()} en \texttt{main.ts}. \\
+Sale texto raro con \texttt{//} en la pantalla & Un comentario de HTML debe ser \texttt{<!-{}- ... -{}->}. \\
+Spinner infinito & Sin internet o URL mal escrita. Revisa la consola (\texttt{F12}). \\
+Ves \texttt{RouterLink} en rojo & Est\'a dentro del bloque \texttt{from '@ionic/angular'}; debe ir en su propio \texttt{import} de \texttt{'@angular/router'}. \\
+\end{tabularx}
+\end{center}
+\end{alerta}
+
+\section{Cierre y retos}
+\begin{itemize}
+\item \textbf{Reto 1:} agrega otro Pok\'emon a la lista (por ejemplo, 7 Squirtle o 150 Mewtwo).
+\item \textbf{Reto 2:} en el detalle, muestra tambi\'en el \texttt{base\_experience} del Pok\'emon (est\'a en el JSON).
+\item \textbf{Reto 3:} cambia el color de la barra superior (\texttt{color="danger"}) por \texttt{primary}, \texttt{success} o \texttt{warning}.
+\item (Opcional, Android) \cmd{ionic build}, \cmd{npx cap add android}, \cmd{npx cap open android}: la misma app corre como app nativa.
+\end{itemize}
+
+\section{Soluci\'on de problemas generales}
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{5.2cm} >{\raggedright\arraybackslash}X@{}}
+\toprule\textbf{Problema} & \textbf{Soluci\'on}\\\midrule
+La terminal no reconoce \cmd{ionic} & Cierra y vuelve a abrir VS Code; si sigue, reinstala con \cmd{npm install -g @ionic/cli}. \\
+PowerShell bloquea scripts & \cmd{Set-ExecutionPolicy -Scope CurrentUser RemoteSigned} \\
+Errores raros de compilaci\'on en Windows & Crea el proyecto en \texttt{C:\textbackslash Proyectos}, sin acentos ni carpetas redirigidas. \\
+Puerto 8100 ocupado & \cmd{ionic serve -{}-port=8101} \\
+Guard\'e y no cambia nada & Revisa que \cmd{ionic serve} siga corriendo; si hay un error viejo, \texttt{Ctrl+C} y vuelve a ejecutarlo. \\
+Formatear el c\'odigo en VS Code & \texttt{Shift+Alt+F} (Mac: \texttt{Shift+Option+F}). \\
+\bottomrule\end{tabularx}
+\end{center}
+\end{document}
